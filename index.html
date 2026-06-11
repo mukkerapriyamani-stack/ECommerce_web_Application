@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftCart - E-Commerce & Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 px-4 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-xl text-indigo-600 cursor-pointer" onclick="switchTab('store')">
+                <i class="fa-solid fa-bag-shopping"></i> SwiftCart
+            </div>
+
+            <div class="flex items-center gap-6">
+                <button onclick="switchTab('store')" class="nav-link font-medium text-indigo-600 hover:text-indigo-700 transition">Shop</button>
+                <button id="nav-orders" onclick="switchTab('orders')" class="nav-link font-medium text-gray-500 hover:text-indigo-600 transition">My Orders</button>
+                <button id="nav-admin" onclick="switchTab('admin')" class="nav-link font-medium text-gray-500 hover:text-indigo-600 transition hidden bg-indigo-50 px-3 py-1 rounded-md text-sm border border-indigo-100">
+                    <i class="fa-solid fa-lock"></i> Admin Panel
+                </button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+                    <button id="role-user-btn" onclick="setRole('User')" class="px-3 py-1.5 rounded-lg bg-white shadow-sm text-gray-800">Customer</button>
+                    <button id="role-admin-btn" onclick="setRole('Admin')" class="px-3 py-1.5 rounded-lg text-gray-500">Admin</button>
+                </div>
+
+                <button onclick="toggleCartModal()" class="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition">
+                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                    <span id="cart-count" class="absolute top-1 right-1 bg-rose-500 text-white font-bold text-[10px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8">
+
+        <section id="view-store" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">Explore Products</h2>
+                <p id="welcome-msg" class="text-sm text-gray-500"></p>
+            </div>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <section id="view-orders" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold tracking-tight text-gray-900">Your Order Summary History</h2>
+            <div id="orders-list" class="space-y-4"></div>
+        </section>
+
+        <section id="view-admin" class="hidden space-y-6">
+            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-200">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Inventory Product Management</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">As an Admin, you can add, modify, and delete active marketplace inventory items.</p>
+                </div>
+                <button onclick="openProductModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-sm transition">
+                    <i class="fa-solid fa-plus mr-1.5"></i> Add New Product
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 uppercase font-semibold text-xs border-b border-gray-200 tracking-wider">
+                            <th class="p-4">Product Image</th>
+                            <th class="p-4">Details</th>
+                            <th class="p-4">Price</th>
+                            <th class="p-4 text-right">Control Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body" class="divide-y divide-gray-200 text-sm"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="cart-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end">
+        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-slide-left">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-900">Your Shopping Cart</h3>
+                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
+            <div class="p-6 border-t border-gray-100 bg-gray-50 space-y-4">
+                <div class="flex justify-between text-base font-bold text-gray-900">
+                    <span>Est. Total:</span>
+                    <span id="cart-total">$0.00</span>
+                </div>
+                <button onclick="checkoutCart()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition shadow-md">
+                    Proceed to Secure Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="product-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-gray-900">Add Inventory Product</h3>
+                <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="product-form" class="p-6 space-y-4">
+                <input type="hidden" id="prod-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Title Name</label>
+                    <input type="text" id="prod-title" required class="w-full px-3.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Price ($ USD)</label>
+                    <input type="number" step="0.01" id="prod-price" required class="w-full px-3.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Image URL Link</label>
+                    <input type="url" id="prod-img" placeholder="https://images.unsplash.com/..." required class="w-full px-3.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Product Description</label>
+                    <textarea id="prod-desc" rows="3" required class="w-full px-3.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm resize-none"></textarea>
+                </div>
+                <div class="flex gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeProductModal()" class="flex-1 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA INTERACTION LAYER (Mock API/Database Layer inside LocalStorage) ---
+        const EComDB = {
+            init() {
+                if (!localStorage.getItem('ecom_products')) {
+                    const defaultProducts = [
+                        { id: '1', title: 'Minimalist Leather Watch', price: 149.00, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500', desc: 'Sleek, high-grade analog wrist wear perfect for minimalist professionals.' },
+                        { id: '2', title: 'Noise-Canceling Wireless Headphones', price: 299.99, img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500', desc: 'Immersive studio audio profile with hybrid active sound blocking tech.' },
+                        { id: '3', title: 'Ergonomic Mechanical Keyboard', price: 89.50, img: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500', desc: 'Tactile mechanical feedback keys paired with a smart aluminum body mount setup.' }
+                    ];
+                    localStorage.setItem('ecom_products', JSON.stringify(defaultProducts));
+                }
+                if (!localStorage.getItem('ecom_orders')) {
+                    localStorage.setItem('ecom_orders', JSON.stringify([]));
+                }
+            },
+            getProducts() { return JSON.parse(localStorage.getItem('ecom_products')); },
+            saveProducts(data) { localStorage.setItem('ecom_products', JSON.stringify(data)); },
+            getOrders() { return JSON.parse(localStorage.getItem('ecom_orders')); },
+            saveOrders(data) { localStorage.setItem('ecom_orders', JSON.stringify(data)); }
+        };
+
+        // --- GLOBAL ROOT STATES ---
+        let currentRole = 'User'; // Default auth scope role context
+        let shoppingCart = [];
+        EComDB.init();
+
+        // --- COMPONENT CONTAINER QUERIES ---
+        const productGrid = document.getElementById('product-grid');
+        const adminTableBody = document.getElementById('admin-table-body');
+        const ordersList = document.getElementById('orders-list');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartCountBadge = document.getElementById('cart-count');
+        const cartTotalDisplay = document.getElementById('cart-total');
+
+        // --- AUTH ROLE CONTROL MECHANICS ---
+        function setRole(role) {
+            currentRole = role;
+            const userBtn = document.getElementById('role-user-btn');
+            const adminBtn = document.getElementById('role-admin-btn');
+            const navAdmin = document.getElementById('nav-admin');
+            const welcomeMsg = document.getElementById('welcome-msg');
+
+            if (role === 'Admin') {
+                userBtn.className = "px-3 py-1.5 rounded-lg text-gray-500";
+                adminBtn.className = "px-3 py-1.5 rounded-lg bg-white shadow-sm text-gray-800";
+                navAdmin.classList.remove('hidden');
+                welcomeMsg.innerHTML = `Signed in as <b class="text-indigo-600">Store Manager Admin</b>`;
+            } else {
+                adminBtn.className = "px-3 py-1.5 rounded-lg text-gray-500";
+                userBtn.className = "px-3 py-1.5 rounded-lg bg-white shadow-sm text-gray-800";
+                navAdmin.classList.add('hidden');
+                welcomeMsg.innerHTML = `Logged in as standard <b class="text-indigo-600">Customer</b> Profile`;
+                if(document.getElementById('view-admin').classList.contains('hidden') === false) {
+                    switchTab('store');
+                }
+            }
+            renderApp();
+        }
+
+        // --- APPLICATION VIEW PORTAL SWAPPER ---
+        function switchTab(tabId) {
+            document.getElementById('view-store').classList.add('hidden');
+            document.getElementById('view-orders').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.replace('text-indigo-600', 'text-gray-500'));
+
+            if (tabId === 'store') {
+                document.getElementById('view-store').classList.remove('hidden');
+            } else if (tabId === 'orders') {
+                document.getElementById('view-orders').classList.remove('hidden');
+                renderOrders();
+            } else if (tabId === 'admin' && currentRole === 'Admin') {
+                document.getElementById('view-admin').classList.remove('hidden');
+                renderAdminPortal();
+            }
+        }
+
+        // --- RENDER ROUTER CONTROLLER ---
+        function renderApp() {
+            renderStorefrontCatalog();
+            renderAdminPortal();
+            updateCartUI();
+        }
+
+        // --- DISPLAY: STOREFRONT CATALOG (CUSTOMER) ---
+        function renderStorefrontCatalog() {
+            const products = EComDB.getProducts();
+            productGrid.innerHTML = '';
+
+            products.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = "bg-white border border-gray-200 rounded-2xl p-4 flex flex-col shadow-sm hover:shadow-md transition";
+                card.innerHTML = `
+                    <div class="w-full h-48 bg-gray-100 rounded-xl overflow-hidden mb-4">
+                        <img src="${escapeHTML(prod.img)}" alt="${escapeHTML(prod.title)}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base break-words">${escapeHTML(prod.title)}</h4>
+                            <p class="text-xs text-gray-500 mt-1 line-clamp-2 break-words">${escapeHTML(prod.desc)}</p>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <span class="text-lg font-extrabold text-gray-900">$${prod.price.toFixed(2)}</span>
+                            <button onclick="addToCart('${prod.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-xl transition text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                `;
+                productGrid.appendChild(card);
+            });
+        }
+
+        // --- DISPLAY: ADMIN INVENTORY CONTROL TABLE ---
+        function renderAdminPortal() {
+            const products = EComDB.getProducts();
+            adminTableBody.innerHTML = '';
+
+            products.forEach(prod => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-4"><img src="${escapeHTML(prod.img)}" class="w-12 h-12 rounded-lg object-cover border border-gray-100"></td>
+                    <td class="p-4 font-medium text-gray-900 max-w-xs">
+                        <div class="truncate">${escapeHTML(prod.title)}</div>
+                        <div class="text-xs text-gray-400 truncate mt-0.5">${escapeHTML(prod.desc)}</div>
+                    </td>
+                    <td class="p-4 font-bold text-gray-900">$${prod.price.toFixed(2)}</td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="openProductModal('${prod.id}')" class="p-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 rounded-md transition" title="Edit Item"><i class="fa-solid fa-pencil text-xs"></i></button>
+                            <button onclick="deleteProduct('${prod.id}')" class="p-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-md transition" title="Delete Item"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </td>
+                `;
+                adminTableBody.appendChild(tr);
+            });
+        }
+
+        // --- DISPLAY: ORDERS TRACKING LOGS ---
+        function renderOrders() {
+            const orders = EComDB.getOrders();
+            ordersList.innerHTML = '';
+
+            if (orders.length === 0) {
+                ordersList.innerHTML = `<div class="text-center py-12 bg-white rounded-2xl border border-gray-200 text-gray-400 text-sm"><i class="fa-solid fa-box-open text-3xl mb-2 block"></i> No order logs tracked. Place an order to see it here!</div>`;
+                return;
+            }
+
+            orders.forEach(order => {
+                const orderCard = document.createElement('div');
+                orderCard.className = "bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4";
+                orderCard.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center pb-3 border-b border-gray-100 gap-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wide text-gray-400">Order Reference Unique Key ID</span>
+                            <h4 class="font-mono text-sm text-gray-800 font-bold">${order.id}</h4>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold text-gray-400 block">${order.date}</span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1 mt-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ${order.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-sm font-medium text-gray-600 space-y-1">
+                        ${order.items.map(i => `<div>• ${escapeHTML(i.title)} <span class="text-gray-400">x${i.qty}</span></div>`).join('')}
+                    </div>
+                    <div class="pt-3 border-t border-gray-100 flex justify-between items-center font-bold text-gray-900">
+                        <span>Total Paid Amount:</span>
+                        <span>$${order.total.toFixed(2)}</span>
+                    </div>
+                `;
+                ordersList.appendChild(orderCard);
+            });
+        }
+
+        // --- CART FUNCTIONAL LOGIC ---
+        window.addToCart = function(id) {
+            const product = EComDB.getProducts().find(p => p.id === id);
+            const cartItem = shoppingCart.find(item => item.id === id);
+
+            if (cartItem) {
+                cartItem.qty++;
+            } else {
+                shoppingCart.push({ ...product, qty: 1 });
+            }
+            updateCartUI();
+        };
+
+        function updateCartUI() {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+            let count = 0;
+
+            shoppingCart.forEach(item => {
+                total += item.price * item.qty;
+                count += item.qty;
+
+                const itemRow = document.createElement('div');
+                itemRow.className = "flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100";
+                itemRow.innerHTML = `
+                    <img src="${escapeHTML(item.img)}" class="w-12 h-12 rounded-lg object-cover">
+                    <div class="flex-1 min-w-0">
+                        <h5 class="font-semibold text-gray-900 text-sm truncate">${escapeHTML(item.title)}</h5>
+                        <p class="text-xs font-bold text-indigo-600 mt-0.5">$${item.price.toFixed(2)}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-md">Qty: ${item.qty}</span>
+                        <button onclick="removeFromCart('${item.id}')" class="text-gray-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(itemRow);
+            });
+
+            cartCountBadge.textContent = count;
+            cartTotalDisplay.textContent = `$${total.toFixed(2)}`;
+        }
+
+        window.removeFromCart = function(id) {
+            shoppingCart = shoppingCart.filter(item => item.id !== id);
+            updateCartUI();
+        };
+
+        window.checkoutCart = function() {
+            if (shoppingCart.length === 0) {
+                alert("Your cart is empty!");
+                return;
+            }
+
+            const orders = EComDB.getOrders();
+            const total = shoppingCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+            const newOrder = {
+                id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                items: shoppingCart,
+                total: total,
+                status: 'Processing (Backend API Sync Active)'
+            };
+
+            orders.unshift(newOrder);
+            EComDB.saveOrders(orders);
+            shoppingCart = [];
+            updateCartUI();
+            toggleCartModal();
+            alert("Order placed successfully! Check 'My Orders' to track your shipment live.");
+            switchTab('orders');
+        };
+
+        window.toggleCartModal = function() {
+            document.getElementById('cart-modal').classList.toggle('hidden');
+        };
+
+        // --- ADMIN INVENTORY CRUD MUTATIONS ---
+        const productModal = document.getElementById('product-modal');
+        const productForm = document.getElementById('product-form');
+
+        window.openProductModal = function(id = null) {
+            productModal.classList.remove('hidden');
+            if (id) {
+                document.getElementById('modal-title').textContent = "Modify Product Specifications";
+                const prod = EComDB.getProducts().find(p => p.id === id);
+                document.getElementById('prod-id').value = prod.id;
+                document.getElementById('prod-title').value = prod.title;
+                document.getElementById('prod-price').value = prod.price;
+                document.getElementById('prod-img').value = prod.img;
+                document.getElementById('prod-desc').value = prod.desc;
+            } else {
+                document.getElementById('modal-title').textContent = "Register Marketplace Product";
+                productForm.reset();
+                document.getElementById('prod-id').value = '';
+            }
+        };
+
+        window.closeProductModal = function() { productModal.classList.add('hidden'); };
+
+        productForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value;
+            const title = document.getElementById('prod-title').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const img = document.getElementById('prod-img').value;
+            const desc = document.getElementById('prod-desc').value;
+
+            let products = EComDB.getProducts();
+
+            if (id) {
+                // Update
+                products = products.map(p => p.id === id ? { id, title, price, img, desc } : p);
+            } else {
+                // Create
+                products.push({ id: Date.now().toString(), title, price, img, desc });
+            }
+
+            EComDB.saveProducts(products);
+            closeProductModal();
+            renderApp();
+        });
+
+        window.deleteProduct = function(id) {
+            if (confirm("Are you sure you want to completely delist this item from store shelves?")) {
+                let products = EComDB.getProducts();
+                products = products.filter(p => p.id !== id);
+                EComDB.saveProducts(products);
+                renderApp();
+            }
+        };
+
+        // --- XSS PROTECTION SANITIZATION UTILITY ---
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        // Initialize App View
+        setRole('User');
+    </script>
+</body>
+</html>
